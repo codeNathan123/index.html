@@ -1,0 +1,1304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CycleSync - Period Tracker</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #ff7eb9;
+            --secondary: #ffafcc;
+            --accent: #cdb4db;
+            --light: #fff0f3;
+            --dark: #a4133c;
+            --text: #333;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #fff0f3, #ffccd5);
+            color: var(--text);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .app-container {
+            max-width: 100%;
+            background: white;
+            border-radius: 0;
+            box-shadow: none;
+            overflow: hidden;
+            margin: 0 auto;
+            position: relative;
+            transition: transform 0.3s ease;
+        }
+        
+        .app-header {
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            color: white;
+            padding: 15px 0;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .header-content {
+            position: relative;
+            z-index: 2;
+            padding: 0 15px;
+        }
+        
+        .language-selector {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 10;
+        }
+        
+        .language-selector .btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            font-weight: 500;
+            border-radius: 20px;
+            padding: 4px 12px;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+        
+        .language-selector .btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        .language-selector .dropdown-menu {
+            min-width: 120px;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            border: none;
+        }
+        
+        .language-selector .dropdown-item {
+            padding: 8px 15px;
+            transition: all 0.2s;
+            font-size: 14px;
+        }
+        
+        .language-selector .dropdown-item:hover {
+            background: var(--light);
+        }
+        
+        .status-card {
+            background: var(--light);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            height: 100%;
+            animation: fadeIn 0.8s ease-out;
+            margin-bottom: 15px;
+        }
+        
+        .status-indicator {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--dark);
+            margin: 10px 0;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        .cycle-days {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin: 15px 0;
+            justify-content: center;
+        }
+        
+        .day {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            background: #f8f9fa;
+            border: 2px solid #dee2e6;
+            font-size: 0.8rem;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .day:hover {
+            transform: scale(1.1);
+        }
+        
+        .day.current {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+            transform: scale(1.15);
+            box-shadow: 0 0 10px rgba(255, 126, 185, 0.5);
+            animation: bounce 1s ease;
+        }
+        
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {transform: translateY(0);}
+            40% {transform: translateY(-10px);}
+            60% {transform: translateY(-5px);}
+        }
+        
+        .day.period {
+            background: var(--secondary);
+            color: white;
+            border-color: var(--secondary);
+        }
+        
+        .day.expected {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
+        }
+        
+        .info-text {
+            background: white;
+            padding: 12px;
+            border-radius: 10px;
+            border-left: 4px solid var(--accent);
+            margin: 15px 0;
+            font-size: 0.9rem;
+            animation: slideIn 0.5s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        
+        .btn-primary {
+            background: var(--primary);
+            border: none;
+            padding: 10px 15px;
+            border-radius: 50px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+        
+        .btn-primary:hover {
+            background: var(--dark);
+        }
+        
+        .btn-secondary {
+            background: var(--accent);
+            border: none;
+            padding: 10px 15px;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+        
+        .body-chart {
+            display: flex;
+            justify-content: center;
+            margin: 15px 0;
+            position: relative;
+        }
+        
+        .body-chart img {
+            max-width: 140px;
+            filter: drop-shadow(0 5px 10px rgba(0,0,0,0.1));
+            animation: float 4s ease-in-out infinite;
+        }
+        
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-8px); }
+            100% { transform: translateY(0px); }
+        }
+        
+        .chart-info {
+            position: absolute;
+            bottom: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 8px 12px;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 0.85rem;
+            width: 80%;
+        }
+        
+        .progress-container {
+            height: 6px;
+            background: #e9ecef;
+            border-radius: 5px;
+            margin: 12px 0;
+            overflow: hidden;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            background: var(--primary);
+            border-radius: 5px;
+            width: 65%;
+            animation: progressFill 1.5s ease-out;
+        }
+        
+        @keyframes progressFill {
+            from { width: 0; }
+        }
+        
+        .cycle-phase {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            color: #6c757d;
+        }
+        
+        .tips .card {
+            border: none;
+            border-radius: 12px;
+            margin-bottom: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+        }
+        
+        .tip-icon {
+            font-size: 1.3rem;
+            color: var(--primary);
+            margin-right: 12px;
+        }
+        
+        .notification {
+            position: fixed;
+            top: 15px;
+            right: 15px;
+            background: white;
+            padding: 12px 20px;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transform: translateX(150%);
+            transition: transform 0.4s ease;
+            z-index: 1000;
+            border-left: 4px solid var(--primary);
+            max-width: 90%;
+            font-size: 0.9rem;
+        }
+        
+        .notification.show {
+            transform: translateX(0);
+        }
+        
+        .form-container {
+            background: var(--light);
+            border-radius: 15px;
+            padding: 20px;
+            margin: 15px 0;
+            animation: fadeIn 0.8s ease-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .cycle-visual {
+            position: relative;
+            height: 180px;
+            margin: 15px 0;
+        }
+        
+        .cycle-phase-card {
+            position: absolute;
+            width: 80px;
+            padding: 8px;
+            text-align: center;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            transition: all 0.5s ease;
+        }
+        
+        .phase-1 {
+            top: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 126, 185, 0.2);
+            border: 2px solid var(--primary);
+            animation: fadeIn 0.8s ease-out;
+        }
+        
+        .phase-2 {
+            top: 70px;
+            left: 20px;
+            background: rgba(205, 180, 219, 0.2);
+            border: 2px solid var(--accent);
+            animation: fadeIn 1s ease-out;
+        }
+        
+        .phase-3 {
+            top: 70px;
+            right: 20px;
+            background: rgba(255, 175, 204, 0.2);
+            border: 2px solid var(--secondary);
+            animation: fadeIn 1.2s ease-out;
+        }
+        
+        .phase-4 {
+            bottom: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(164, 19, 60, 0.2);
+            border: 2px solid var(--dark);
+            animation: fadeIn 1.4s ease-out;
+        }
+        
+        .current-phase {
+            background: rgba(255, 255, 255, 0.8) !important;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            font-weight: bold;
+            animation: highlight 2s infinite;
+        }
+        
+        @keyframes highlight {
+            0% { box-shadow: 0 0 0 0 rgba(255, 126, 185, 0.4); }
+            70% { box-shadow: 0 0 0 8px rgba(255, 126, 185, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 126, 185, 0); }
+        }
+        
+        .photo-gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+            gap: 12px;
+            margin: 25px 0;
+        }
+        
+        .photo-item {
+            border-radius: 10px;
+            overflow: hidden;
+            height: 130px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            position: relative;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .photo-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .photo-caption {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0,0,0,0.6);
+            color: white;
+            padding: 6px;
+            font-size: 0.75rem;
+            text-align: center;
+            transform: translateY(100%);
+            transition: transform 0.3s ease;
+        }
+        
+        .photo-item:hover .photo-caption {
+            transform: translateY(0);
+        }
+        
+        .gallery-title {
+            text-align: center;
+            margin: 30px 0 15px;
+            color: var(--dark);
+            position: relative;
+            padding-bottom: 12px;
+            font-size: 1.5rem;
+        }
+        
+        .gallery-title:after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 70px;
+            height: 3px;
+            background: var(--primary);
+            border-radius: 3px;
+        }
+        
+        .mobile-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 0;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            z-index: 1000;
+            border-top-left-radius: 15px;
+            border-top-right-radius: 15px;
+        }
+        
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: #6c757d;
+            text-decoration: none;
+            font-size: 0.8rem;
+            padding: 5px 10px;
+        }
+        
+        .nav-item.active {
+            color: var(--primary);
+        }
+        
+        .nav-icon {
+            font-size: 1.2rem;
+            margin-bottom: 3px;
+        }
+        
+        .mobile-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 15px;
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            color: white;
+        }
+        
+        .mobile-header .logo {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .mobile-header h1 {
+            font-size: 1.3rem;
+            margin: 0;
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 767px) {
+            .app-header {
+                padding: 10px 0;
+            }
+            
+            .app-header h1 {
+                font-size: 1.4rem;
+            }
+            
+            .app-header p {
+                font-size: 0.9rem;
+            }
+            
+            .container {
+                padding: 0 15px;
+            }
+            
+            .status-card {
+                padding: 15px;
+            }
+            
+            .status-indicator {
+                font-size: 1.2rem;
+            }
+            
+            .day {
+                width: 28px;
+                height: 28px;
+                font-size: 0.75rem;
+            }
+            
+            .photo-gallery {
+                grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+                gap: 10px;
+            }
+            
+            .photo-item {
+                height: 110px;
+            }
+            
+            .body-chart img {
+                max-width: 120px;
+            }
+            
+            .chart-info {
+                font-size: 0.8rem;
+                padding: 6px 10px;
+            }
+            
+            .cycle-visual {
+                height: 160px;
+            }
+            
+            .cycle-phase-card {
+                width: 70px;
+                font-size: 0.7rem;
+                padding: 6px;
+            }
+            
+            .form-container {
+                padding: 15px;
+            }
+            
+            .btn {
+                padding: 8px 12px;
+                font-size: 0.85rem;
+            }
+            
+            .mobile-nav {
+                display: flex;
+            }
+        }
+        
+        @media (max-width: 576px) {
+            .language-selector .btn {
+                font-size: 13px;
+                padding: 3px 8px;
+            }
+            
+            .cycle-days {
+                gap: 5px;
+            }
+            
+            .day {
+                width: 26px;
+                height: 26px;
+                font-size: 0.7rem;
+            }
+            
+            .photo-gallery {
+                grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+            }
+            
+            .photo-item {
+                height: 90px;
+            }
+            
+            .gallery-title {
+                font-size: 1.3rem;
+                margin: 25px 0 10px;
+            }
+            
+            .mobile-header h1 {
+                font-size: 1.1rem;
+            }
+            
+            .mobile-header .logo i {
+                font-size: 1rem;
+            }
+            
+            .nav-item {
+                font-size: 0.7rem;
+            }
+            
+            .nav-icon {
+                font-size: 1.1rem;
+            }
+            
+            .form-container h3 {
+                font-size: 1.2rem;
+            }
+        }
+        
+        @media (min-width: 768px) {
+            .app-container {
+                max-width: 1000px;
+                border-radius: 20px;
+                box-shadow: 0 15px 40px rgba(164, 19, 60, 0.15);
+                margin: 30px auto;
+            }
+            
+            .app-header {
+                padding: 20px 0;
+            }
+            
+            .mobile-header {
+                display: none;
+            }
+            
+            .mobile-nav {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <marquee>Desinged By Nathan</marquee>
+    <div class="mobile-header d-lg-none">
+        <div class="logo">
+            <i class="fas fa-heartbeat"></i>
+            <h1><span data-translate="app_title">CycleSync</span></h1>
+        </div>
+        <div class="language-selector">
+            <div class="btn-group">
+                <button type="button" class="btn dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" id="currentLangMobile">
+                    <i class="fas fa-globe me-1"></i> English
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li><a class="dropdown-item" href="#" data-lang="en"><i class="fas fa-language me-2"></i>English</a></li>
+                    <li><a class="dropdown-item" href="#" data-lang="rw"><i class="fas fa-language me-2"></i>Kinyarwanda</a></li>
+                    <li><a class="dropdown-item" href="#" data-lang="sw"><i class="fas fa-language me-2"></i>Swahili</a></li>
+                    <li><a class="dropdown-item" href="#" data-lang="fr"><i class="fas fa-language me-2"></i>French</a></li>
+                    <li><a class="dropdown-item" href="#" data-lang="ar"><i class="fas fa-language me-2"></i>Arabic</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <div class="app-container">
+        <header class="app-header text-center d-none d-lg-block">
+            <div class="header-content">
+                <div class="language-selector">
+                    <div class="btn-group">
+                        <button type="button" class="btn dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" id="currentLang">
+                            <i class="fas fa-globe me-1"></i> English
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#" data-lang="en"><i class="fas fa-language me-2"></i>English</a></li>
+                            <li><a class="dropdown-item" href="#" data-lang="rw"><i class="fas fa-language me-2"></i>Kinyarwanda</a></li>
+                            <li><a class="dropdown-item" href="#" data-lang="sw"><i class="fas fa-language me-2"></i>Swahili</a></li>
+                            <li><a class="dropdown-item" href="#" data-lang="fr"><i class="fas fa-language me-2"></i>French</a></li>
+                            <li><a class="dropdown-item" href="#" data-lang="ar"><i class="fas fa-language me-2"></i>Arabic</a></li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <h1 class="display-5 fw-bold"><i class="fas fa-heartbeat me-2"></i><span data-translate="app_title">CycleSync</span></h1>
+                <p class="lead" data-translate="app_subtitle">Track your menstrual cycle with confidence</p>
+            </div>
+        </header>
+        
+        <div class="container py-3">
+            <div class="row">
+                <div class="col-lg-8">
+                    <div class="status-card mb-3">
+                        <div class="d-flex align-items-center mb-2">
+                            <i class="fas fa-calendar-check fa-lg me-2" style="color: var(--dark);"></i>
+                            <h2 class="h4 mb-0" data-translate="cycle_status">Your Current Cycle Status</h2>
+                        </div>
+                        
+                        <div class="text-center my-3">
+                            <div class="status-indicator" data-translate="day_indicator">Day 18 of 28</div>
+                            <div class="text-muted small" data-translate="next_period">Next period expected in 10 days</div>
+                        </div>
+                        
+                        <div class="body-chart">
+                            <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 300'%3E%3Cpath fill='%23ffccd5' d='M100,50 C130,50 150,80 150,120 C150,170 120,200 100,250 C80,200 50,170 50,120 C50,80 70,50 100,50 Z'/%3E%3Ccircle cx='100' cy='90' r='15' fill='%23ff7eb9'/%3E%3C/svg%3E" alt="Body chart">
+                            <div class="chart-info" data-translate="ovulation_info">Ovulation phase - High fertility</div>
+                        </div>
+                        
+                        <div class="cycle-visual d-none d-md-block">
+                            <div class="cycle-phase-card phase-1" data-translate="menstruation">Menstruation</div>
+                            <div class="cycle-phase-card phase-2" data-translate="follicular">Follicular Phase</div>
+                            <div class="cycle-phase-card phase-3 current-phase" data-translate="ovulation">Ovulation</div>
+                            <div class="cycle-phase-card phase-4" data-translate="luteal">Luteal Phase</div>
+                        </div>
+                        
+                        <div class="cycle-days">
+                            <div class="day period">1</div>
+                            <div class="day period">2</div>
+                            <div class="day period">3</div>
+                            <div class="day period">4</div>
+                            <div class="day period">5</div>
+                            <div class="day">6</div>
+                            <div class="day">7</div>
+                            <div class="day">8</div>
+                            <div class="day">9</div>
+                            <div class="day">10</div>
+                            <div class="day">11</div>
+                            <div class="day">12</div>
+                            <div class="day">13</div>
+                            <div class="day expected">14</div>
+                            <div class="day">15</div>
+                            <div class="day">16</div>
+                            <div class="day">17</div>
+                            <div class="day current">18</div>
+                            <div class="day">19</div>
+                            <div class="day">20</div>
+                            <div class="day">21</div>
+                            <div class="day">22</div>
+                            <div class="day">23</div>
+                            <div class="day">24</div>
+                            <div class="day">25</div>
+                            <div class="day">26</div>
+                            <div class="day">27</div>
+                            <div class="day expected">28</div>
+                        </div>
+                        
+                        <div class="info-text">
+                            <p class="mb-0 small" data-translate="phase_info">You're currently in the ovulation phase. This is your most fertile window if you're trying to conceive.</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-4">
+                    <div class="status-card mb-3">
+                        <div class="d-flex align-items-center mb-2">
+                            <i class="fas fa-bell fa-lg me-2" style="color: var(--dark);"></i>
+                            <h2 class="h4 mb-0" data-translate="reminders">Reminders & Advice</h2>
+                        </div>
+                        
+                        <div class="alert alert-info small">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <span data-translate="next_period_date">Your next period is expected on <strong>June 16, 2025</strong></span>
+                        </div>
+                        
+                        <div class="tips">
+                            <div class="card">
+                                <div class="card-body d-flex">
+                                    <div class="tip-icon">
+                                        <i class="fas fa-seedling"></i>
+                                    </div>
+                                    <div>
+                                        <h5 class="card-title h6" data-translate="nutrition_title">Nutrition Tip</h5>
+                                        <p class="card-text small" data-translate="nutrition_tip">Increase intake of leafy greens and omega-3 rich foods to support hormone balance.</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="card">
+                                <div class="card-body d-flex">
+                                    <div class="tip-icon">
+                                        <i class="fas fa-heartbeat"></i>
+                                    </div>
+                                    <div>
+                                        <h5 class="card-title h6" data-translate="exercise_title">Exercise</h5>
+                                        <p class="card-text small" data-translate="exercise_tip">Moderate exercise like swimming or walking can help maintain energy levels.</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="card">
+                                <div class="card-body d-flex">
+                                    <div class="tip-icon">
+                                        <i class="fas fa-bed"></i>
+                                    </div>
+                                    <div>
+                                        <h5 class="card-title h6" data-translate="rest_title">Rest</h5>
+                                        <p class="card-text small" data-translate="rest_tip">Aim for 7-8 hours of sleep to support your body during this phase.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <button class="btn btn-primary w-100 mt-2" id="logPeriodBtn">
+                            <i class="fas fa-plus-circle me-2"></i> <span data-translate="log_period">Log Period Start</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <h3 class="gallery-title" data-translate="gallery_title">Cycle Health Guide</h3>
+            
+            <div class="photo-gallery">
+                <div class="photo-item">
+                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Crect width='200' height='200' fill='%23ffccd5'/%3E%3Ccircle cx='100' cy='80' r='40' fill='%23ff7eb9'/%3E%3Cpath d='M40,180 Q100,140 160,180 L160,200 L40,200 Z' fill='%23a4133c'/%3E%3C/svg%3E" alt="Healthy eating">
+                    <div class="photo-caption" data-translate="healthy_eating">Healthy Eating</div>
+                </div>
+                <div class="photo-item">
+                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Crect width='200' height='200' fill='%23cdb4db'/%3E%3Cpath d='M50,150 L150,150 L150,120 L130,100 L120,70 L80,70 L70,100 L50,120 Z' fill='%23ffafcc'/%3E%3Ccircle cx='100' cy='50' r='30' fill='%23ff7eb9'/%3E%3C/svg%3E" alt="Exercise">
+                    <div class="photo-caption" data-translate="exercise">Exercise</div>
+                </div>
+                <div class="photo-item">
+                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Crect width='200' height='200' fill='%23ffafcc'/%3E%3Cpath d='M50,120 L70,100 L80,70 L120,70 L130,100 L150,120 L150,150 L50,150 Z' fill='%23ff7eb9'/%3E%3Ccircle cx='100' cy='50' r='30' fill='%23cdb4db'/%3E%3Cpath d='M40,170 L160,170 L160,200 L40,200 Z' fill='%23a4133c'/%3E%3C/svg%3E" alt="Hydration">
+                    <div class="photo-caption" data-translate="hydration">Hydration</div>
+                </div>
+                <div class="photo-item">
+                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Crect width='200' height='200' fill='%23ff7eb9'/%3E%3Cpath d='M50,100 L100,50 L150,100 L150,150 L50,150 Z' fill='%23cdb4db'/%3E%3Ccircle cx='100' cy='80' r='20' fill='%23ffafcc'/%3E%3C/svg%3E" alt="Calendar">
+                    <div class="photo-caption" data-translate="tracking">Cycle Tracking</div>
+                </div>
+                <div class="photo-item">
+                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Crect width='200' height='200' fill='%23a4133c'/%3E%3Ccircle cx='100' cy='100' r='80' fill='%23ffccd5'/%3E%3Cpath d='M70,70 L130,130 M70,130 L130,70' stroke='%23ff7eb9' stroke-width='10'/%3E%3C/svg%3E" alt="Rest">
+                    <div class="photo-caption" data-translate="rest">Rest & Relaxation</div>
+                </div>
+            </div>
+            
+            <div class="form-container" id="setupForm">
+                <h3 class="text-center mb-3 h4" style="color: var(--dark);"><i class="fas fa-cog me-2"></i><span data-translate="setup_title">Set Up Your Cycle</span></h3>
+                
+                <div class="row g-2">
+                    <div class="col-12 mb-2">
+                        <label for="lastPeriod" class="form-label" data-translate="last_period">First Day of Last Period</label>
+                        <input type="date" class="form-control" id="lastPeriod" required>
+                    </div>
+                    
+                    <div class="col-md-6 mb-2">
+                        <label for="cycleLength" class="form-label" data-translate="cycle_length">Cycle Length (days)</label>
+                        <select class="form-select" id="cycleLength">
+                            <option value="21">21 <span data-translate="days">days</span></option>
+                            <option value="24">24 <span data-translate="days">days</span></option>
+                            <option value="28" selected>28 <span data-translate="days">days</span></option>
+                            <option value="30">30 <span data-translate="days">days</span></option>
+                            <option value="32">32 <span data-translate="days">days</span></option>
+                            <option value="35">35 <span data-translate="days">days</span></option>
+                        </select>
+                    </div>
+                    
+                    <div class="col-md-6 mb-2">
+                        <label for="periodLength" class="form-label" data-translate="period_length">Period Length (days)</label>
+                        <select class="form-select" id="periodLength">
+                            <option value="3">3 <span data-translate="days">days</span></option>
+                            <option value="4">4 <span data-translate="days">days</span></option>
+                            <option value="5" selected>5 <span data-translate="days">days</span></option>
+                            <option value="6">6 <span data-translate="days">days</span></option>
+                            <option value="7">7 <span data-translate="days">days</span></option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="text-center mt-3">
+                    <button class="btn btn-primary px-4 me-2" id="saveBtn">
+                        <i class="fas fa-save me-2"></i><span data-translate="save">Save Settings</span>
+                    </button>
+                    <button class="btn btn-secondary px-4" id="cancelBtn">
+                        <i class="fas fa-times me-2"></i><span data-translate="cancel">Cancel</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <footer class="text-center py-3" style="background: #f8f9fa; border-top: 1px solid #e9ecef;">
+            <div class="container">
+                <p class="mb-1 small" data-translate="privacy">Your data is stored locally on your device. Always consult a healthcare provider for medical advice.</p>
+                <p class="mb-0 text-muted small">CycleSync &copy; 2025 | <span data-translate="rights">All Rights Reserved</span></p>
+            </div>
+        </footer>
+    </div>
+    
+    <div class="notification" id="notification">
+        <i class="fas fa-bell" style="color: var(--primary);"></i>
+        <div><strong data-translate="reminder">Reminder:</strong> <span data-translate="reminder_text">Your period is expected to start in 3 days!</span></div>
+    </div>
+    
+    
+    <div class="mobile-nav d-lg-none">
+        <a href="#" class="nav-item active">
+            <i class="fas fa-home nav-icon"></i>
+            <span data-translate="home">Home</span>
+        </a>
+        <a href="#" class="nav-item">
+            <i class="fas fa-calendar nav-icon"></i>
+            <span data-translate="calendar">Calendar</span>
+        </a>
+        <a href="#" class="nav-item">
+            <i class="fas fa-chart-line nav-icon"></i>
+            <span data-translate="stats">Stats</span>
+        </a>
+        <a href="#" class="nav-item">
+            <i class="fas fa-cog nav-icon"></i>
+            <span data-translate="settings">Settings</span>
+        </a>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const notification = document.getElementById('notification');
+            const setupForm = document.getElementById('setupForm');
+            const logPeriodBtn = document.getElementById('logPeriodBtn');
+            const currentLangBtn = document.getElementById('currentLang');
+            const currentLangMobileBtn = document.getElementById('currentLangMobile');
+            
+           
+            const translations = {
+                en: {
+                    app_title: "CycleSync",
+                    app_subtitle: "Track your menstrual cycle with confidence",
+                    cycle_status: "Your Current Cycle Status",
+                    day_indicator: "Day 18 of 28",
+                    next_period: "Next period expected in 10 days",
+                    ovulation_info: "Ovulation phase - High fertility",
+                    menstruation: "Menstruation",
+                    follicular: "Follicular Phase",
+                    ovulation: "Ovulation",
+                    luteal: "Luteal Phase",
+                    phase_info: "You're currently in the ovulation phase. This is your most fertile window if you're trying to conceive.",
+                    reminders: "Reminders & Advice",
+                    next_period_date: "Your next period is expected on <strong>June 16, 2025</strong>",
+                    nutrition_title: "Nutrition Tip",
+                    nutrition_tip: "Increase intake of leafy greens and omega-3 rich foods to support hormone balance.",
+                    exercise_title: "Exercise",
+                    exercise_tip: "Moderate exercise like swimming or walking can help maintain energy levels.",
+                    rest_title: "Rest",
+                    rest_tip: "Aim for 7-8 hours of sleep to support your body during this phase.",
+                    log_period: "Log Period Start",
+                    setup_title: "Set Up Your Cycle",
+                    last_period: "First Day of Last Period",
+                    cycle_length: "Cycle Length (days)",
+                    period_length: "Period Length (days)",
+                    days: "days",
+                    save: "Save Settings",
+                    cancel: "Cancel",
+                    privacy: "Your data is stored locally on your device. Always consult a healthcare provider for medical advice.",
+                    rights: "All Rights Reserved",
+                    reminder: "Reminder:",
+                    reminder_text: "Your period is expected to start in 3 days!",
+                    gallery_title: "Cycle Health Guide",
+                    healthy_eating: "Healthy Eating",
+                    exercise: "Exercise",
+                    hydration: "Hydration",
+                    tracking: "Cycle Tracking",
+                    rest: "Rest & Relaxation",
+                    home: "Home",
+                    calendar: "Calendar",
+                    stats: "Stats",
+                    settings: "Settings"
+                },
+                rw: {
+                    app_title: "CycleSync",
+                    app_subtitle: "Kurikirana imyaka yawe y'imyaka wifashishije icyizere",
+                    cycle_status: "Imiterere yawe y'ubu",
+                    day_indicator: "Umunsi wa 18 mu 28",
+                    next_period: "Igihe gikurikira giteganyijwe mu minsi 10",
+                    ovulation_info: "Igihe cyo kubyara - Ubushobozi bwo kubyara bukabije",
+                    menstruation: "Imyaka",
+                    follicular: "Igihe cya Follicular",
+                    ovulation: "Gutanga amagi",
+                    luteal: "Igihe cya Luteal",
+                    phase_info: "Ubu uri mu gihe cyo gutanga amagi. Iki ni gihe cyawe cy'ubushobozi bukabije bwo kubyara niba ushaka kubyara.",
+                    reminders: "Ibyibutso n'Inama",
+                    next_period_date: "Imyaka yawe ikurikira iteganijwe ku <strong>16 Kamena 2025</strong>",
+                    nutrition_title: "Inama ku Biribwa",
+                    nutrition_tip: "Ongera utere imbere ibiryo by'ibimera n'ibiryo bifite omega-3 kugirango ushyigikire imbaraga z'imyaka.",
+                    exercise_title: "Gukora imikino",
+                    exercise_tip: "Gukora imikino nk'ikinyabuzima cyangwa kugenda birashobora kugufasha gukomeza imbaraga.",
+                    rest_title: "Guhumeka",
+                    rest_tip: "Gerageza gusinzira amasaha 7-8 kugirango ushyigikire umubiri wawe muri iki gihe.",
+                    log_period: "Andika Itangiriro ry'Imyaka",
+                    setup_title: "Gushiraho Imyaka Yawe",
+                    last_period: "Itariki y'Itangiriro ry'Imyaka Ishize",
+                    cycle_length: "Uburebure bw'imyaka (iminsi)",
+                    period_length: "Uburebure bw'imyaka (iminsi)",
+                    days: "iminsi",
+                    save: "Bika Igenamiterere",
+                    cancel: "Hagarika",
+                    privacy: "Amakuru yawe yabikwa kuri mudasobwa yawe. Buri gihe kora ubushakashatsi kumubwiriza w'ubuzima kugirango ubone inama.",
+                    rights: "Ubutaka Bwose Bwabikijwe",
+                    reminder: "Ibyibutso:",
+                    reminder_text: "Imyaka yawe iteganijwe gutangira mu minsi 3!",
+                    gallery_title: "Ubuyobozi bw'Ubuzima bw'Imiterere",
+                    healthy_eating: "Kurya Byiza",
+                    exercise: "Gukora Imikino",
+                    hydration: "Kunywa Amazi",
+                    tracking: "Kurikirana Imiterere",
+                    rest: "Guhumeka no Kwiruhuka",
+                    home: "Ahabanza",
+                    calendar: "Kalindari",
+                    stats: "Ibisobanuro",
+                    settings: "Igenamiterere"
+                },
+                sw: {
+                    app_title: "CycleSync",
+                    app_subtitle: "Fuatilia mzunguko wako wa hedhi kwa ujasiri",
+                    cycle_status: "Hali Yako ya Sasa",
+                    day_indicator: "Siku 18 ya 28",
+                    next_period: "Hedhi inayotarajiwa kwa siku 10",
+                    ovulation_info: "Awamu ya Ovuleni - Uwezo mkubwa wa mimba",
+                    menstruation: "Hedhi",
+                    follicular: "Awamu ya Folikuli",
+                    ovulation: "Ovuleni",
+                    luteal: "Awamu ya Luteal",
+                    phase_info: "Uko sasa uko katika awamu ya ovuleni. Huu ni wakati wako wa uwezo mkubwa wa mimba ikiwa unajaribu kupata mimba.",
+                    reminders: "Ukumbusho na Ushauri",
+                    next_period_date: "Hedhi yako inayofuata inatarajiwa <strong>16 Juni 2025</strong>",
+                    nutrition_title: "Kidokezo cha Lishe",
+                    nutrition_tip: "Ongeza ulaji wa mboga za majani na vyakula vilivyo na omega-3 ili kusaidia usawa wa homoni.",
+                    exercise_title: "Mazoezi",
+                    exercise_tip: "Mazoezi ya wastani kama kuogelea au kutembea yanaweza kusaidia kudumisha viwango vya nishati.",
+                    rest_title: "Pumzika",
+                    rest_tip: "Lenga kulala saa 7-8 ili kusaidia mwili wako wakati huu.",
+                    log_period: "Weheshia Mwanzo wa Hedhi",
+                    setup_title: "Sanidi Mzunguko Wako",
+                    last_period: "Tarehe ya Siku ya Kwanza ya Hedhi Iliyopita",
+                    cycle_length: "Urefu wa Mzunguko (siku)",
+                    period_length: "Urefu wa Hedhi (siku)",
+                    days: "siku",
+                    save: "Hifadhi Mipangilio",
+                    cancel: "Ghairi",
+                    privacy: "Takwimu yako inahifadhiwa kwenye kifaa chako. Daima wasiliana na mtoa huduma ya afya kwa ushauri wa matibabu.",
+                    rights: "Haki Zote Zimehifadhiwa",
+                    reminder: "Ukumbusho:",
+                    reminder_text: "Hedhi yako inatarajiwa kuanza kwa siku 3!",
+                    gallery_title: "Mwongozo wa Afya ya Mzunguko",
+                    healthy_eating: "Kula Salama",
+                    exercise: "Mazoezi",
+                    hydration: "Kunywa Maji",
+                    tracking: "Kufuatilia Mzunguko",
+                    rest: "Pumzika na Utulivu",
+                    home: "Nyumbani",
+                    calendar: "Kalenda",
+                    stats: "Takwimu",
+                    settings: "Mipangilio"
+                },
+                fr: {
+                    app_title: "CycleSync",
+                    app_subtitle: "Suivez votre cycle menstruel en toute confiance",
+                    cycle_status: "État actuel de votre cycle",
+                    day_indicator: "Jour 18 sur 28",
+                    next_period: "Prochaines règles prévues dans 10 jours",
+                    ovulation_info: "Phase d'ovulation - Fertilité élevée",
+                    menstruation: "Menstruation",
+                    follicular: "Phase folliculaire",
+                    ovulation: "Ovulation",
+                    luteal: "Phase lutéale",
+                    phase_info: "Vous êtes actuellement en phase d'ovulation. C'est votre fenêtre la plus fertile si vous essayez de concevoir.",
+                    reminders: "Rappels et conseils",
+                    next_period_date: "Vos prochaines règles sont prévues le <strong>16 juin 2025</strong>",
+                    nutrition_title: "Conseil nutritionnel",
+                    nutrition_tip: "Augmentez votre consommation de légumes verts et d'aliments riches en oméga-3 pour soutenir l'équilibre hormonal.",
+                    exercise_title: "Exercice",
+                    exercise_tip: "Un exercice modéré comme la natation ou la marche peut aider à maintenir les niveaux d'énergie.",
+                    rest_title: "Repos",
+                    rest_tip: "Visez 7 à 8 heures de sommeil pour soutenir votre corps pendant cette phase.",
+                    log_period: "Enregistrer le début des règles",
+                    setup_title: "Configurer votre cycle",
+                    last_period: "Premier jour des dernières règles",
+                    cycle_length: "Durée du cycle (jours)",
+                    period_length: "Durée des règles (jours)",
+                    days: "jours",
+                    save: "Enregistrer les paramètres",
+                    cancel: "Annuler",
+                    privacy: "Vos données sont stockées localement sur votre appareil. Consultez toujours un professionnel de santé pour des conseils médicaux.",
+                    rights: "Tous droits réservés",
+                    reminder: "Rappel :",
+                    reminder_text: "Vos règles devraient commencer dans 3 jours !",
+                    gallery_title: "Guide de santé du cycle",
+                    healthy_eating: "Alimentation saine",
+                    exercise: "Exercice",
+                    hydration: "Hydratation",
+                    tracking: "Suivi du cycle",
+                    rest: "Repos et relaxation",
+                    home: "Accueil",
+                    calendar: "Calendrier",
+                    stats: "Statistiques",
+                    settings: "Paramètres"
+                },
+                ar: {
+                    app_title: "CycleSync",
+                    app_subtitle: "تتبع دورتك الشهرية بثقة",
+                    cycle_status: "حالة دورتك الحالية",
+                    day_indicator: "اليوم 18 من 28",
+                    next_period: "الدورة التالية متوقعة بعد 10 أيام",
+                    ovulation_info: "مرحلة التبويض - خصوبة عالية",
+                    menstruation: "الحيض",
+                    follicular: "المرحلة الجرابية",
+                    ovulation: "الإباضة",
+                    luteal: "المرحلة الأصفرية",
+                    phase_info: "أنت حالياً في مرحلة التبويض. هذه هي الفترة الأكثر خصوبة إذا كنت تحاولين الحمل.",
+                    reminders: "التذكيرات والنصائح",
+                    next_period_date: "الدورة التالية متوقعة في <strong>16 يونيو 2025</strong>",
+                    nutrition_title: "نصيحة غذائية",
+                    nutrition_tip: "زيدي من تناول الخضروات الورقية والأطعمة الغنية بأوميغا 3 لدعم التوازن الهرموني.",
+                    exercise_title: "التمارين",
+                    exercise_tip: "التمارين المعتدلة مثل السباحة أو المشي يمكن أن تساعد في الحفاظ على مستويات الطاقة.",
+                    rest_title: "الراحة",
+                    rest_tip: "احرصي على النوم من 7 إلى 8 ساعات لدعم جسمك خلال هذه المرحلة.",
+                    log_period: "تسجيل بداية الدورة",
+                    setup_title: "إعداد دورتك",
+                    last_period: "اليوم الأول من آخر دورة",
+                    cycle_length: "طول الدورة (أيام)",
+                    period_length: "مدة الدورة (أيام)",
+                    days: "أيام",
+                    save: "حفظ الإعدادات",
+                    cancel: "إلغاء",
+                    privacy: "يتم تخزين بياناتك محلياً على جهازك. استشيري دائماً مقدم الرعاية الصحية للحصول على المشورة الطبية.",
+                    rights: "جميع الحقوق محفوظة",
+                    reminder: "تذكير:",
+                    reminder_text: "من المتوقع أن تبدأ دورتك الشهرية بعد 3 أيام!",
+                    gallery_title: "دليل صحة الدورة",
+                    healthy_eating: "الأكل الصحي",
+                    exercise: "التمارين",
+                    hydration: "ترطيب الجسم",
+                    tracking: "تتبع الدورة",
+                    rest: "الراحة والاسترخاء",
+                    home: "الصفحة الرئيسية",
+                    calendar: "التقويم",
+                    stats: "الإحصائيات",
+                    settings: "الإعدادات"
+                }
+            };
+            
+           
+            let currentLanguage = localStorage.getItem('language') || 'en';
+            applyLanguage(currentLanguage);
+            
+           
+            document.querySelectorAll('.dropdown-item').forEach(item => {
+                item.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const lang = this.getAttribute('data-lang');
+                    currentLanguage = lang;
+                    localStorage.setItem('language', lang);
+                    applyLanguage(lang);
+                    
+                   
+                    const langText = this.textContent.trim();
+                    if (currentLangBtn) currentLangBtn.innerHTML = `<i class="fas fa-globe me-1"></i> ${langText}`;
+                    if (currentLangMobileBtn) currentLangMobileBtn.innerHTML = `<i class="fas fa-globe me-1"></i> ${langText}`;
+                });
+            });
+            
+            function applyLanguage(lang) {
+                const langData = translations[lang];
+                document.querySelectorAll('[data-translate]').forEach(el => {
+                    const key = el.getAttribute('data-translate');
+                    if (langData[key]) {
+                        if (el.tagName === 'INPUT' || el.tagName === 'SELECT') {
+                            el.placeholder = langData[key];
+                        } else {
+                            el.innerHTML = langData[key];
+                        }
+                    }
+                });
+                
+               
+                if (lang === 'ar') {
+                    document.body.setAttribute('dir', 'rtl');
+                    document.body.style.textAlign = 'right';
+                } else {
+                    document.body.setAttribute('dir', 'ltr');
+                    document.body.style.textAlign = 'left';
+                }
+            }
+            
+            
+            setTimeout(() => {
+                notification.classList.add('show');
+                
+                
+                setTimeout(() => {
+                    notification.classList.remove('show');
+                }, 5000);
+            }, 2000);
+            
+            
+            const userData = localStorage.getItem('periodData');
+            
+            if (!userData) {
+               
+                const today = new Date();
+                const formattedDate = today.toISOString().split('T')[0];
+                document.getElementById('lastPeriod').value = formattedDate;
+            } else {
+                setupForm.classList.add('d-none');
+            }
+            
+            
+            document.getElementById('saveBtn').addEventListener('click', function() {
+                const lastPeriod = document.getElementById('lastPeriod').value;
+                const cycleLength = document.getElementById('cycleLength').value;
+                const periodLength = document.getElementById('periodLength').value;
+                
+                if (!lastPeriod) {
+                    showCustomAlert('Please select the first day of your last period.', 'error');
+                    return;
+                }
+                
+                
+                const periodData = {
+                    lastPeriod,
+                    cycleLength,
+                    periodLength
+                };
+                
+                localStorage.setItem('periodData', JSON.stringify(periodData));
+                setupForm.classList.add('d-none');
+                
+                // Show success message
+                showCustomAlert('Your settings have been saved! The tracker is now active.', 'success');
+            });
+            
+            // Cancel setup
+            document.getElementById('cancelBtn').addEventListener('click', function() {
+                if (!userData) {
+                    showCustomAlert('Please complete setup to use the tracker.', 'error');
+                    return;
+                }
+                setupForm.classList.add('d-none');
+            });
+            
+            // Log period button
+            logPeriodBtn.addEventListener('click', function() {
+                const today = new Date();
+                const formattedDate = today.toISOString().split('T')[0];
+                
+                if (userData) {
+                    const data = JSON.parse(userData);
+                    data.lastPeriod = formattedDate;
+                    localStorage.setItem('periodData', JSON.stringify(data));
+                } else {
+                    const periodData = {
+                        lastPeriod: formattedDate,
+                        cycleLength: 28,
+                        periodLength: 5
+                    };
+                    localStorage.setItem('periodData', JSON.stringify(periodData));
+                }
+                
+                
+                notification.querySelector('div').innerHTML = '<strong>Period started logged for today!</strong>';
+                notification.classList.add('show');
+                
+                setTimeout(() => {
+                    notification.classList.remove('show');
+                }, 3000);
+            });
+            
+            
+            document.querySelectorAll('.day').forEach((day, index) => {
+                setTimeout(() => {
+                    day.style.opacity = '0';
+                    day.style.transform = 'scale(0.5)';
+                    day.style.transition = 'all 0.5s ease';
+                    
+                    setTimeout(() => {
+                        day.style.opacity = '1';
+                        day.style.transform = 'scale(1)';
+                    }, 50);
+                }, index * 30);
+            });
+            
+            
+            function showCustomAlert(message, type) {
+                const alertDiv = document.createElement('div');
+                alertDiv.className = `alert alert-${type === 'error' ? 'danger' : 'success'} alert-dismissible fade show`;
+                alertDiv.style.position = 'fixed';
+                alertDiv.style.top = '20px';
+                alertDiv.style.left = '50%';
+                alertDiv.style.transform = 'translateX(-50%)';
+                alertDiv.style.zIndex = '2000';
+                alertDiv.style.minWidth = '300px';
+                alertDiv.style.textAlign = 'center';
+                alertDiv.innerHTML = `
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                `;
+                
+                document.body.appendChild(alertDiv);
+                
+                
+                setTimeout(() => {
+                    alertDiv.remove();
+                }, 3000);
+            }
+        });
+    </script>
+</body>
+</html>
